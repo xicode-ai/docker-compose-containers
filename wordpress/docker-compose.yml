@@ -1,0 +1,45 @@
+version: "3.9"
+services:
+  db:
+    image: mysql
+    volumes:
+      - ./volumes/mysql:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345678
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: javacoffees
+      MYSQL_PASSWORD: 12345678
+  phpmyadmin:
+    image: phpmyadmin
+    depends_on:
+      - db
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+  wordpress:
+    depends_on:
+      - db
+    image: wordpress
+    ports:
+      - "8100:80"
+    volumes:
+      - ./volumes/wp:/var/www/html
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: 12345678
+      WORDPRESS_DB_NAME: wordpress
+  nginx:
+    depends_on:
+      - wordpress
+    image: nginx
+    volumes:
+      - ./volumes/nginx/html:/usr/share/nginx/html
+      - ./volumes/nginx/conf.d:/etc/nginx/conf.d
+      - ./volumes/nginx/log:/var/log/nginx
+    links:
+      - wordpress
+    ports:
+      - "80:80"
+      - "443:443"

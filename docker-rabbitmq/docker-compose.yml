@@ -1,0 +1,17 @@
+version: '3.5'
+
+services:
+  rabbitmq:
+    image: rabbitmq:4.1-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+      TZ: "Asia/Shanghai"
+    volumes:
+      - /Users/louis/Documents/volumes/rabbitmq/db:/var/lib/rabbitmq
+    ports:
+    - "5672:5672"
+    - "15672:15672"
+    restart: no
+    #command: "--hostname default-rabbitmq"

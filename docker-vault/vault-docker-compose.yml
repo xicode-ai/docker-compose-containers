@@ -1,0 +1,25 @@
+version: '3.5'
+
+services:
+  vault:
+    image: vault:latest
+    container_name: vault
+    restart: always
+    volumes:
+      - /var/vault/logs:/vault/logs
+      - /var/vault/file:/vault/file
+      - /var/vault/config:/vault/config
+      - /var/vault/config/config.json:/vault/config/config.json
+    #vault 需要锁定内存以防止敏感值信息被交换(swapped)到磁盘中
+    # 为此需要添加如下 capability
+    ports:
+      - "8200:8200"
+    cap_add:
+      - IPC_LOCK
+    environment:
+      - VAULT_ADDR=http://127.0.0.1:8200
+      - VAULT_TOKEN=root
+    # 必须设定 entrypoint，否则 vault 容器默认以 development 模式运行
+    entrypoint: vault server -config=/vault/config/config.json
+
+    

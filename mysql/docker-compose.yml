@@ -1,0 +1,47 @@
+version: "3.7"
+services:
+  master:
+    image: mysql:8.0
+    container_name: db-master
+    restart: unless-stopped
+    ports:
+      - 3306:3306
+    volumes:
+      - ./master/log:/var/log/mysql
+      - ./master/data:/var/lib/mysql:rw
+      - ./master/mysql-files:/var/lib/mysql-files:rw
+      - ./master/conf/my.cnf:/etc/mysql/my.cnf:rw
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+    networks:
+      mysql:
+        aliases:
+          - master
+
+  slave:
+    image: mysql:8.0
+    container_name: db-slave
+    restart: unless-stopped
+    ports:
+      - 3307:3306
+    volumes:
+      - ./slave/log:/var/log/mysql
+      - ./slave/data:/var/lib/mysql:rw
+      - ./slave/mysql-files:/var/lib/mysql-files:rw
+      - ./slave/conf/my.cnf:/etc/mysql/my.cnf:rw
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+    links:
+      - master
+    networks:
+      mysql:
+        aliases:
+          - slave
+
+
+networks:
+  mysql:
+    name: mysql
+    driver: "bridge"

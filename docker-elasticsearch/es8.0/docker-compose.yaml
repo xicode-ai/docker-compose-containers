@@ -1,0 +1,61 @@
+version: '3.5'
+services:
+  elasticsearch:
+    image: elasticsearch:8.12.2
+    container_name: es-node-1
+    hostname: es-node-1
+    restart: no
+    secrets:
+      - elastic_password
+    environment:
+      - TZ=Asia/Shanghai
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - es_network
+    volumes:
+      - /Users/louis/Documents/volumes/elasticsearch/data/:/usr/share/elasticsearch/data
+      - /Users/louis/Documents/volumes/elasticsearch/plugins:/usr/share/elasticsearch/plugins
+      - /Users/louis/Documents/volumes/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      # 添加证书目录挂载
+      - /Users/louis/Documents/volumes/elasticsearch/config/certs:/usr/share/elasticsearch/config/certs
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "curl -s -u elastic:$(cat /run/secrets/elastic_password) -f http://localhost:9200/_cluster/health || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  kibana:
+    image: kibana:8.12.2
+    container_name: kibana
+    hostname: kibana
+    volumes:
+      - /Users/louis/Documents/volumes/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    environment:
+      - TZ=Asia/Shanghai
+      - XPACK_GRAPH_ENABLED=true
+      - TIMELION_ENABLED=true
+      - XPACK_MONITORING_COLLECTION_ENABLED="true"
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - es_network
+    # 其他配置保持不变...
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5601/api/status" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      # 如果您的 Docker Compose 版本低于 2.1，请删除下面这行
+      start_period: 40s
+networks:
+  es_network:
+    driver: bridge
+secrets:
+  elastic_password:
+    file: /Users/louis/Documents/volumes/elasticsearch/elastic_password.txt  # 存储密码的文件

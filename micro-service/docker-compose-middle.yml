@@ -1,0 +1,126 @@
+version: "3.8"
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    privileged: true
+    ports:
+      - "3306:3306"
+    volumes:
+      #数据挂载
+      - /app/mysql/data:/var/lib/mysql:rw
+      #配置挂载
+      - /app/mysql/conf:/etc/mysql/conf.d
+      - /app/mysql/log:/var/log/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: nacos_devtest
+      MYSQL_USER: nacos
+      MYSQL_PASSWORD: nacos
+      LANG=C: UTF-8
+      TZ: Asia/Shanghai
+
+  nacos:
+    image: nacos/nacos-server:latest
+    container_name: nacos
+    depends_on:
+      - mysql
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "9849:9849"
+      - "9555:9555"
+    environment:
+      - JVM_XMS=256m
+      - JVM_XMX=256m
+    volumes:
+      - /app/nacos/logs:/home/nacos/logs
+      - /app/nacos/data:/home/nacos/data
+      - /app/nacos/conf/application.properties:/home/nacos/conf/application.properties
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    environment:
+      - TZ=Asia/Shanghai # 设置时区
+    restart: unless-stopped # 重启方式
+    ports:
+      - "16379:6379"
+    volumes:
+      - /app/redis/data:/data
+      - /app/redis/conf/redis.conf:/usr/local/etc/redis/redis.conf:rw
+      - /app/redis/logs:/logs
+    sysctls: # 设置容器中的内核参数
+      - net.core.somaxconn=1024
+    #内存分配控制Redis建议把这个值设置为1，是为了让fork能够在低内存下也执行成功
+    command: /bin/sh -c "echo 'vm.overcommit_memory = 1' >> /etc/sysctl.conf
+      && redis-server /usr/local/etc/redis/redis.conf"
+    privileged: true # 使用该参数，container内的root拥有真正的root权限。否则，container内的root只是外部的一个普通用户权限
+
+
+  namesrv-a:
+    image: foxiswho/rocketmq:4.8.0
+    #    image: registry.cn-hangzhou.aliyuncs.com/foxiswho/rocketmq:4.7.0
+    container_name: namesrv-a
+    ports:
+      - 9876:9876
+    volumes:
+      - /var/namesrv/namesrv-a/logs:/home/rocketmq/logs
+      - /var/namesrv/namesrv-a/store:/home/rocketmq/store
+    environment:
+      JAVA_OPT_EXT: "-Duser.home=/home/rocketmq -Xms512M -Xmx512M -Xmn128m"
+    command: sh mqnamesrv
+    networks:
+      rmq:
+        aliases:
+          - namesrv-a
+
+
+  broker-m:
+    image: foxiswho/rocketmq:4.8.0
+    #    image: registry.cn-hangzhou.aliyuncs.com/foxiswho/rocketmq:4.7.0
+    container_name: broker-m
+    ports:
+      - 10909:10909
+      - 10911:10911
+    volumes:
+      - /var/broker/broker-m/logs:/home/rocketmq/rocketmq-4.8.0/logs
+      - /var/broker/broker-m/store:/home/rocketmq/rocketmq-4.8.0/store
+      - /var/broker/broker-m/conf/broker.conf:/home/rocketmq/rocketmq-4.8.0/conf/broker.conf
+      - /var/broker/broker-m/conf/plain_acl.yml:/home/rocketmq/rocketmq-4.8.0/conf/plain_acl.yml
+    environment:
+      TZ: Asia/Shanghai
+      JAVA_OPTS: " -Duser.home=/home/rocketmq"
+      JAVA_OPT_EXT: "-server -Xms128m -Xmx128m -Xmn128m"
+    command: sh mqbroker -c /home/rocketmq/rocketmq-4.8.0/conf/broker.conf
+    depends_on:
+      - namesrv-a
+    links:
+      - namesrv-a:namesrv-a
+    networks:
+      rmq:
+        aliases:
+          - broker
+
+
+  rmqconsole:
+    image: apacherocketmq/rocketmq-dashboard:1.0.0
+    container_name: rmqconsole
+    ports:
+      - 8070:8070
+    volumes:
+      - /var/rocketmq-console/data:/tmp/rocketmq-console/data
+    environment:
+      JAVA_OPTS: "-Drocketmq.namesrv.addr=namesrv-a:9876;namesrv-a:9877 -Dserver.port=8070 -Dcom.rocketmq.sendMessageWithVIPChannel=false -Drocketmq.config.loginRequired=true -Drocketmq.config.aclEnabled=true -Drocketmq.config.accessKey={ROCKET_MQ_ACCESS_KEY_ID} -Drocketmq.config.secretKey={ROCKET_MQ_SECRET_KEY}"
+    depends_on:
+      - namesrv-a
+    links:
+      - namesrv-a:namesrv-a
+    networks:
+      rmq:
+        aliases:
+          - rmqconsole
+networks:
+  rmq:
+    name: rmq
+    driver: "bridge"

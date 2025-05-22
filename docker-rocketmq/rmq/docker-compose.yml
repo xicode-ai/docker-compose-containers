@@ -1,0 +1,118 @@
+version: '3.6'
+
+services:
+  #nameserver集群
+  namesrv-a:
+    image: foxiswho/rocketmq:4.8.0
+    #    image: registry.cn-hangzhou.aliyuncs.com/foxiswho/rocketmq:4.7.0
+    container_name: namesrv-a
+    ports:
+      - 9876:9876
+    volumes:
+      - /docker/rocketmq/namesrv/namesrv-a/logs:/home/rocketmq/logs
+      - /docker/rocketmq/namesrv/namesrv-a/store:/home/rocketmq/store
+    environment:
+      JAVA_OPT_EXT: "-Duser.home=/home/rocketmq -Xms256M -Xmx256M -Xmn128m"
+    command: sh mqnamesrv
+    networks:
+      rmq:
+        aliases:
+          - namesrv-a
+
+#  namesrv-b:
+#    image: foxiswho/rocketmq:4.8.0
+#    #    image: registry.cn-hangzhou.aliyuncs.com/foxiswho/rocketmq:4.7.0
+#    container_name: namesrv-b
+#    ports:
+#      - 9877:9877
+#    volumes:
+#      - ./namesrv/namesrv-b/logs:/home/rocketmq/logs
+#      - ./namesrv/namesrv-b/store:/home/rocketmq/store
+#    environment:
+#      JAVA_OPT_EXT: "-Duser.home=/home/rocketmq -Xms512M -Xmx512M -Xmn128m"
+#    command: sh mqnamesrv
+#    networks:
+#      rmq:
+#        aliases:
+#          - namesrv-b
+
+  broker-m:
+    image: foxiswho/rocketmq:4.8.0
+    #    image: registry.cn-hangzhou.aliyuncs.com/foxiswho/rocketmq:4.7.0
+    container_name: broker-m
+    ports:
+      - 10909:10909
+      - 10911:10911
+    volumes:
+      - /docker/rocketmq/broker/broker-m/logs:/home/rocketmq/logs
+      - /docker/rocketmq/broker/broker-m/store:/home/rocketmq//store
+      - /docker/rocketmq/broker/broker-m/conf/broker.conf:/home/rocketmq/rocketmq-4.8.0/conf/broker.conf
+      - /docker/rocketmq/broker/broker-m/conf/plain_acl.yml:/home/rocketmq/rocketmq-4.8.0/conf/plain_acl.yml
+    environment:
+      TZ: Asia/Shanghai
+      JAVA_OPTS: " -Duser.home=/home/rocketmq"
+      JAVA_OPT_EXT: "-server -Xms128m -Xmx128m -Xmn128m"
+    command: sh mqbroker -c /home/rocketmq/rocketmq-4.8.0/conf/broker.conf
+    depends_on:
+      - namesrv-a
+      #- namesrv-b
+    links:
+      - namesrv-a:namesrv-a
+      #- namesrv-b:namesrv-b
+    networks:
+      rmq:
+        aliases:
+          - broker
+
+#  broker-s:
+#    image: foxiswho/rocketmq:4.8.0
+#  #    image: registry.cn-hangzhou.aliyuncs.com/foxiswho/rocketmq:4.7.0
+#    container_name: broker-s
+#    ports:
+#      - 11909:11909
+#      - 11911:11911
+#    volumes:
+#      - ./broker/broker-s/logs:/home/rocketmq/rocketmq-4.8.0/logs
+#      - ./broker/broker-s/store:/home/rocketmq/rocketmq-4.8.0/store
+#      - ./broker/broker-s/conf/broker.conf:/home/rocketmq/rocketmq-4.8.0/conf/broker.conf
+#      - ./broker/broker-s/conf/plain_acl.yml:/home/rocketmq/rocketmq-4.8.0/conf/plain_acl.yml
+#    environment:
+#      TZ: Asia/Shanghai
+#      JAVA_OPTS: " -Duser.home=/home/rocketmq"
+#      JAVA_OPT_EXT: "-server -Xms128m -Xmx128m -Xmn128m"
+#    command: sh mqbroker -c /home/rocketmq/rocketmq-4.8.0/conf/broker.conf
+#    depends_on:
+#      - namesrv-a
+#      - namesrv-b
+#    links:
+#      - namesrv-a:namesrv-a
+#      - namesrv-b:namesrv-b
+#    networks:
+#      rmq:
+#        aliases:
+#          - broker
+
+  rmqconsole:
+    image: apacherocketmq/rocketmq-dashboard:1.0.0
+    container_name: rmqconsole
+    ports:
+      - 8070:8070
+    volumes:
+      - /docker/rocketmq/console/data:/tmp/rocketmq-console/data
+    environment:
+      JAVA_OPTS: "-Drocketmq.namesrv.addr=namesrv-a:9876 -Dserver.port=8070 -Dcom.rocketmq.sendMessageWithVIPChannel=false -Drocketmq.config.loginRequired=true -Drocketmq.config.aclEnabled=true -Drocketmq.config.accessKey={ROCKET_MQ_ACCESS_KEY_ID} -Drocketmq.config.secretKey={ROCKET_MQ_SECRET_KEY}"
+    depends_on:
+      - namesrv-a
+      #- namesrv-b
+    links:
+      - namesrv-a:namesrv-a
+      #- namesrv-b:namesrv-b
+    networks:
+      rmq:
+        aliases:
+          - rmqconsole
+
+networks:
+  rmq:
+    name: rmq
+    driver: "bridge"

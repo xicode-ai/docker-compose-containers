@@ -1,0 +1,24 @@
+version: '3.5'
+
+services:
+  nacos:
+    image: nacos/nacos-server:v2.4.3
+    container_name: nacos-standalone
+    environment:
+    - MODE=standalone
+    - JVM_XMS=256m
+    - JVM_XMX=512m
+    - JVM_XMN=128m
+    - SPRING_DATASOURCE_PLATFORM=mysql
+    - MYSQL_SERVICE_HOST=8.136.182.146
+    - MYSQL_SERVICE_PORT=3306
+    - MYSQL_SERVICE_DB_NAME=nacos_config_test
+    - MYSQL_SERVICE_USER=root
+    - MYSQL_SERVICE_PASSWORD=carlsberg-oms-123
+     # 设置连接 mysql 的连接参数
+    - MYSQL_DB_PARAM="characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&serverTimezone=Asia/Shanghai"
+    volumes:
+    - /Users/louis/Documents/volumes/nacos/log:/home/nacos/logs
+    #- /Users/louis/Documents/volumes/nacos/conf/application.properties:/home/nacos/conf/application.properties
+    ports:
+    - "8848:8848"

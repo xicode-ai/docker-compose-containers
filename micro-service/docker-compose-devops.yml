@@ -1,0 +1,60 @@
+version: "3.8"
+services:
+  jenkins:
+    image: jenkins/jenkins:latest
+    container_name: jenkins
+    ports:
+      - "10240:8080"
+      - "10241:50000"
+    volumes:
+      #数据挂载
+      - /var/jenkins/data:/var/jenkins_home
+      #maven挂载
+      - /usr/local/maven:/usr/local/maven
+      - /usr/local/maven-repository:/usr/local/maven-repository
+      - /etc/localtime:/etc/localtime
+      - #docker挂载
+      - /usr/bin/docker:/usr/bin/docker
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      TZ: Asia/Shanghai
+
+  loki:
+    image: grafana/loki:2.2.1
+    container_name: loki
+    volumes:
+      #    将loki的配置文件挂载到本地 c:/docker/loki 目录
+      - /var/loki:/etc/loki/
+      - /loki:/loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/loki.yml
+    networks:
+      - loki_net
+
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    ports:
+      - "9080:9080"
+    volumes:
+      - /var/promtail/config.yml:/etc/promtail/config.yml
+    environment:
+      LOKI_HOST: loki_net
+      LOKI_PORT: 3100
+    networks:
+      - loki_net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - loki_net
+
+networks:
+  loki_net:
+    name: loki
+    driver: "bridge"

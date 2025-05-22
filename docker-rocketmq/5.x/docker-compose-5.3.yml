@@ -1,0 +1,90 @@
+version: '3.8'
+services:
+  rmqnamesrv:
+    image: apache/rocketmq:5.3.0
+    container_name: rmqnamesrv
+    ports:
+      - 9876:9876
+    networks:
+      rocketmq:
+        aliases:
+          - rmqnamesrv
+    restart: always
+    privileged: true
+    volumes:
+      - /docker/rocketmq/namesrv/namesrv-a/logs:/home/rocketmq/logs
+      - /docker/rocketmq/namesrv/namesrv-a/store:/home/rocketmq/store
+    environment:
+      JAVA_OPT_EXT: "-Duser.home=/home/rocketmq -Xms256m -Xmx256m -Xmn128m"
+    command: ["sh","mqnamesrv"]
+  broker-a:
+    image: apache/rocketmq:5.3.0
+    container_name: rmqbroker
+    ports:
+      - 10909:10909
+      - 10911:10911
+      - 10912:10912
+      - 8080:8080
+      - 8081:8081
+    restart: always
+    privileged: true
+    volumes:
+      # 宿主机目录：容器目录
+      - /docker/rocketmq/broker/broker-m/logs:/home/rocketmq/logs/rocketmqlogs
+      - /docker/rocketmq/broker/broker-m/store:/home/rocketmq/store
+      - /docker/rocketmq/broker/broker-m/conf/plain_acl.yml:/home/rocketmq/rocketmq-5.3.0/conf/plain_acl.yml
+      - /docker/rocketmq/broker/broker-m/conf/broker.conf:/home/rocketmq/rocketmq-5.3.0/conf/broker.conf
+      #- /docker/rocketmq/broker/broker-m/conf/rmq-proxy.json:/home/rocketmq/rocketmq-5.3.0/conf/rmq-proxy.json
+    depends_on:
+      - 'rmqnamesrv'
+    environment:
+      TZ: Asia/Shanghai
+      JAVA_OPTS: " -Duser.home=/home/rocketmq"
+      JAVA_OPT_EXT: "-server -Xms256m -Xmx256m -Xmn128m"
+      NAMESRV_ADDR: "rmqnamesrv:9876"
+    links:
+      - rmqnamesrv
+    networks:
+      rocketmq:
+        aliases:
+          - broker
+    command: ["sh","mqbroker","-c","/home/rocketmq/rocketmq-5.3.0/conf/broker.conf","--enable-proxy"]
+#  proxy:
+#    image: apache/rocketmq:5.3.0
+#    container_name: rmqproxy
+#    networks:
+#      - rocketmq
+#    depends_on:
+#      - broker-a
+#      - rmqnamesrv
+#    links:
+#      - rmqnamesrv
+#    ports:
+#      - 8090:8080
+#      - 8091:8081
+#    restart: on-failure
+#    environment:
+#      - NAMESRV_ADDR=rmqnamesrv:9876
+#      - JAVA_OPT_EXT=-server -Xms256m -Xmx256m -Xmn128m
+#    command: sh mqproxy
+
+  rmqdashboard:
+    image: apacherocketmq/rocketmq-dashboard:latest
+    container_name: rocketmq-dashboard
+    volumes:
+      - /docker/rocketmq/console/data:/tmp/rocketmq-console/data
+    ports:
+      - 8070:8070
+    restart: always
+    privileged: true
+    depends_on:
+      - 'rmqnamesrv'
+    networks:
+      - rocketmq
+    environment:
+      - JAVA_OPTS= -Drocketmq.namesrv.addr=rmqnamesrv:9876 -Dserver.port=8070 -Dcom.rocketmq.sendMessageWithVIPChannel=false -Drocketmq.config.loginRequired=true -Drocketmq.config.aclEnabled=true -Drocketmq.config.accessKey={ROCKET_MQ_ACCESS_KEY_ID} -Drocketmq.config.secretKey={ROCKET_MQ_SECRET_KEY}
+
+networks:
+  rocketmq:
+    name: rocketmq
+    driver: "bridge"

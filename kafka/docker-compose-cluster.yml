@@ -1,0 +1,105 @@
+version: '3.7'
+
+services:
+  kafka1:
+    image: 'bitnami/kafka:3.6.1'
+    ports:
+      - '19092:19092'
+    environment:
+      - KAFKA_KRAFT_CLUSTER_ID=EX5bq5NfRe2IX1nhxrSO6g
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=broker
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9092, EXTERNAL://:19092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka1:9092, EXTERNAL://192.168.56.103:19092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT, EXTERNAL:PLAINTEXT, CONTROLLER:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=3@kafka3:9093, 4@kafka4:9093, 5@kafka5:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+    volumes:
+      - /Users/louis/Documents/volumes/kafka/data:/bitnami/kafka/data
+      - /Users/louis/Documents/volumes/kafka/config:/opt/bitnami/kafka/config
+      - /Users/louis/Documents/volumes/kafka/logs:/opt/bitnami/kafka/logs
+    networks:
+      - kfk-network
+  kafka2:
+    image: 'bitnami/kafka:3.6.1'
+    ports:
+      - '29092:19092'
+    environment:
+      - KAFKA_KRAFT_CLUSTER_ID=EX5bq5NfRe2IX1nhxrSO6g
+      - KAFKA_CFG_NODE_ID=2
+      - KAFKA_CFG_PROCESS_ROLES=broker
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9092, EXTERNAL://:19092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka2:9092, EXTERNAL://192.168.56.103:29092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT, EXTERNAL:PLAINTEXT, CONTROLLER:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=3@kafka3:9093, 4@kafka4:9093, 5@kafka5:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+    volumes:
+      - /Users/louis/Documents/volumes/kafka/data:/bitnami/kafka/data
+      - /Users/louis/Documents/volumes/kafka/config:/opt/bitnami/kafka/config
+      - /Users/louis/Documents/volumes/kafka/logs:/opt/bitnami/kafka/logs
+    networks:
+      - kfk-network
+  kafka3:
+    image: 'bitnami/kafka:3.6.1'
+    ports:
+      - '39092:19092'
+    environment:
+      - KAFKA_KRAFT_CLUSTER_ID=EX5bq5NfRe2IX1nhxrSO6g
+      - KAFKA_CFG_NODE_ID=3
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9092, EXTERNAL://:19092, CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka3:9092, EXTERNAL://192.168.56.103:39092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT, EXTERNAL:PLAINTEXT, CONTROLLER:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=3@kafka3:9093, 4@kafka4:9093, 5@kafka5:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+    volumes:
+      - /Users/louis/Documents/volumes/kafka/data:/bitnami/kafka/data
+      - /Users/louis/Documents/volumes/kafka/config:/opt/bitnami/kafka/config
+      - /Users/louis/Documents/volumes/kafka/logs:/opt/bitnami/kafka/logs
+    networks:
+      - kfk-network
+  kafka4:
+    image: 'bitnami/kafka:3.6.1'
+    ports:
+      - '49092:19092'
+    environment:
+      - KAFKA_KRAFT_CLUSTER_ID=EX5bq5NfRe2IX1nhxrSO6g
+      - KAFKA_CFG_NODE_ID=4
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9092, EXTERNAL://:19092, CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka4:9092, EXTERNAL://192.168.56.103:49092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT, EXTERNAL:PLAINTEXT, CONTROLLER:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=3@kafka3:9093, 4@kafka4:9093, 5@kafka5:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+    volumes:
+      - /Users/louis/Documents/volumes/kafka/data:/bitnami/kafka/data
+      - /Users/louis/Documents/volumes/kafka/config:/opt/bitnami/kafka/config
+      - /Users/louis/Documents/volumes/kafka/logs:/opt/bitnami/kafka/logs
+    networks:
+      - kfk-network
+  kafka5:
+    image: 'bitnami/kafka:3.6.1'
+    ports:
+      - '59092:19092'
+    environment:
+      - KAFKA_KRAFT_CLUSTER_ID=EX5bq5NfRe2IX1nhxrSO6g
+      - KAFKA_CFG_NODE_ID=5
+      - KAFKA_CFG_PROCESS_ROLES=controller
+      - KAFKA_CFG_LISTENERS=CONTROLLER://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT, EXTERNAL:PLAINTEXT, CONTROLLER:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=3@kafka3:9093, 4@kafka4:9093, 5@kafka5:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+    volumes:
+      - /Users/louis/Documents/volumes/kafka/data:/bitnami/kafka/data
+      - /Users/louis/Documents/volumes/kafka/config:/opt/bitnami/kafka/config
+      - /Users/louis/Documents/volumes/kafka/logs:/opt/bitnami/kafka/logs
+    networks:
+      - kfk-network
+networks:
+  kfk-network:
+    name: kfk-network
+    external: true

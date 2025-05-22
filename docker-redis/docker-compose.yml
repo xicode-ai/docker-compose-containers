@@ -1,0 +1,21 @@
+version: '3.7'
+
+services:
+  redis:
+    image: redis:latest
+    container_name: redis
+    environment:
+      - TZ=Asia/Shanghai # 设置时区
+    restart: on-failure # 重启方式
+    ports:
+    - "16379:6379"
+    volumes:
+      - /app/redis/data:/data
+      - /app/redis/conf/redis.conf:/usr/local/etc/redis/redis.conf:rw
+      - /app/redis/logs:/logs
+    sysctls: # 设置容器中的内核参数
+      - net.core.somaxconn=1024
+    #内存分配控制Redis建议把这个值设置为1，是为了让fork能够在低内存下也执行成功
+    command: /bin/sh -c "echo 'vm.overcommit_memory = 1' >> /etc/sysctl.conf
+      && redis-server /usr/local/etc/redis/redis.conf"
+    privileged: true # 使用该参数，container内的root拥有真正的root权限。否则，container内的root只是外部的一个普通用户权限

@@ -1,0 +1,4 @@
+{
+  "rocketMQClusterName": "DefaultCluster",
+   "grpcServerPort": 18081  //对外暴露的端口
+}

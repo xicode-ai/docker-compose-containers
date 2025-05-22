@@ -1,0 +1,68 @@
+version: "3.8"
+services:
+  namesrv:
+    image: apache/rocketmq:5.1.0
+    container_name: namesrv
+    ports:
+      - "9876:9876"
+    volumes:
+      - /var/namesrv/logs:/home/rocketmq/logs/rocketmqlogs
+      - /var/namesrv/store:/home/rocketmq/store
+    environment:
+      JAVA_OPTS: " -Duser.home=/home/rocketmq"
+      JAVA_OPT_EXT: "-server -Xms256M -Xmx256M"
+    command: sh mqnamesrv
+    networks:
+      rmq:
+        aliases:
+          - namesrv
+
+
+  broker:
+    image: apache/rocketmq:5.1.0
+    container_name: broker
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+    volumes:
+      - /var/broker/logs:/home/rocketmq/logs/rocketmqlogs
+      - /var/broker/store:/home/rocketmq/store
+      - /var/broker/conf/broker.conf:/home/rocketmq/rocketmq-5.1.0/conf/broker.conf
+      - /var/broker/conf/plain_acl.yml:/home/rocketmq/rocketmq-5.1.0/conf/plain_acl.yml
+    environment:
+      TZ: Asia/Shanghai
+      JAVA_OPTS: " -Duser.home=/home/rocketmq"
+      JAVA_OPT_EXT: "-server -Xms512m -Xmx512m"
+    command: sh mqbroker -c /home/rocketmq/rocketmq-5.1.0/conf/broker.conf
+    depends_on:
+      - namesrv
+    links:
+      - namesrv:namesrv
+    networks:
+      rmq:
+        aliases:
+          - broker
+
+
+  mqdashboard:
+    image: apacherocketmq/rocketmq-dashboard:latest
+    container_name: rocketmq-dashboard
+    ports:
+      - "8001:8080"
+    volumes:
+      - /var/rocketmq-dashboard/data:/tmp/rocketmq-console/data
+    environment:
+      JAVA_OPTS: -Xmx256M -Xms256M -Xmn128M -Drocketmq.namesrv.addr=namesrv:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false -Drocketmq.config.loginRequired=true -Drocketmq.config.accessKey=rocketmq -Drocketmq.config.secretKey=12345678
+    depends_on:
+      - namesrv
+    links:
+      - namesrv:namesrv
+    networks:
+      rmq:
+        aliases:
+          - mqdashboard
+
+networks:
+  rmq:
+    name: rmq
+    driver: "bridge"
